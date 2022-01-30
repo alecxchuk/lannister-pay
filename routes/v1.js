@@ -3,15 +3,21 @@
 const { Router } = require("express");
 const controller = require("../controllers/v1_controller");
 
-const router = Router();
+module.exports = function (database) {
+  const router = Router();
 
-// fees
-router.post("/fees", controller.fees);
+  // fees
+  router.post("/fees", controller.fees(database));
 
-// compute-transaction-fee
-router.post("/compute-transaction-fee", controller.computeTransactionFee);
+  // compute-transaction-fee
+  router.post(
+    "/compute-transaction-fee",
+    controller.computeTransactionFee(database)
+  );
 
-// get db
-router.get("/all", controller.getDb);
+  // get db
+  router.get("/all", controller.getDb);
 
-module.exports = router;
+  return router;
+  // module.exports = router;
+};

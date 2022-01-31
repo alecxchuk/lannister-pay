@@ -39,17 +39,17 @@ exports.fees = function (db) {
       db.set("fees", payloadList);
 
       // success response
-      sendSuccess(
-        res,
-        //{ results: payloadList.length, payloadList },
-        { status: "ok" },
-        "success",
-        200
-      );
+      // sendSuccess(
+      //   res,
+      //   //{ results: payloadList.length, payloadList },
+      //   { status: "ok" },
+      //   "success",
+      //   200
+      // );
 
-      // return response.status(200).json({
-      //   status: "ok",
-      // });
+      return res.status(200).json({
+        status: "ok",
+      });
     } catch (err) {
       // error
       sendError(res, { message: "failure" });
@@ -167,11 +167,14 @@ exports.computeTransactionFee = function (db) {
       // checking to see if there are not applicable fees
       // returns an error when there is no applicable fee
       if (fees.length === 0) {
-        sendError(res, {
-          code: 404,
-          message: "No fee configuration for USD transactions.",
-        });
-        return;
+        return res
+          .status(404)
+          .json({ Error: "No fee configuration for USD transactions." });
+        // sendError(res, {
+        //   code: 404,
+        //   message: "No fee configuration for USD transactions.",
+        // });
+        // return;
       }
 
       // gets the fee type
@@ -231,7 +234,8 @@ exports.computeTransactionFee = function (db) {
         SettlementAmount: ChargeAmount - AppliedFeeValue,
       };
       // returns response
-      sendSuccess(res, payload, "HTTP 200 OK", 200);
+      // sendSuccess(res, payload, "HTTP 200 OK", 200);
+      return res.status(200).json(payload);
     } catch (err) {
       console.log(err);
       sendError(res, {
@@ -243,11 +247,13 @@ exports.computeTransactionFee = function (db) {
 };
 
 // Controller to get all data from db
-exports.getDb = async (req, res) => {
-  try {
-    const results = db.getAll();
-    sendSuccess(res, results);
-  } catch (err) {
-    sendError(res, { message: "failure" });
-  }
+exports.getDb = function (db) {
+  return (req, res) => {
+    try {
+      const results = db.getAll();
+      sendSuccess(res, results);
+    } catch (err) {
+      sendError(res, { message: "failure" });
+    }
+  };
 };

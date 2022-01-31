@@ -16,7 +16,7 @@ module.exports = function (database) {
   );
 
   // get db
-  router.get("/all", controller.getDb);
+  router.get("/all", controller.getDb(database));
 
   return router;
   // module.exports = router;

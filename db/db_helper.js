@@ -20,16 +20,27 @@ const set = (index, data) => {
   if (typeof hash[index] === "undefined") {
     hash[index] = [];
   }
-  if (index === "fees") {
-    hash[index] = data;
-  } else {
-    hash[index].push(data);
-  }
 
-  commitDB();
+  const equal = JSON.stringify(get("fees")) == JSON.stringify(data);
+  if (equal) {
+    return;
+  } else {
+    hash[index] = data;
+    // if (index === "fees") {
+    //   hash[index] = data;
+    // } else {
+    //   hash[index].push(data);
+    // }
+
+    commitDB();
+  }
 };
 
 const itemExist = (index, id) => {
+  const objectsEqual = (o1, o2) =>
+    Object.keys(o1).length === Object.keys(o2).length &&
+    Object.keys(o1).every((p) => o1[p] === o2[p]);
+
   if (hash[index].filter((e) => e.fee_id === id).length > 0) {
     return true;
   }

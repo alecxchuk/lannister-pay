@@ -2,10 +2,10 @@ const request = require("supertest");
 const makeApp = require("../app");
 
 // mock function using jest
-const getAll = jest.fn();
+const get = jest.fn();
 const set = jest.fn();
 
-const app = makeApp({ getAll, set });
+const app = makeApp({ get, set });
 const {
   bodyData,
   computeTestData,
@@ -98,9 +98,9 @@ describe("/compute-transaction-fee", () => {
   // the functions within get called before each test
   beforeEach(() => {
     // resets the set function before each test
-    getAll.mockReset();
+    get.mockReset();
     // sets a mock return value for the getAll mock function
-    getAll.mockReturnValue(sampleDb);
+    get.mockReturnValue(sampleDb.fees);
   });
 
   describe("When giving the Amount, Currency, CurrencyCountry, PaymentEntity, Customer,Issuer, Brand, Type, Country", () => {
@@ -108,7 +108,7 @@ describe("/compute-transaction-fee", () => {
     test("should get configuration spec from the database", async () => {
       await request(app).post("/compute-transaction-fee").send(computeTestData);
       // getall function should be called only once
-      expect(getAll.mock.calls.length).toBe(1);
+      expect(get.mock.calls.length).toBe(1);
     });
 
     test("should respond with a json object containg the AppliedFeeId, AppliedFeeValue,ChargeAmount,SettleAmount", async () => {

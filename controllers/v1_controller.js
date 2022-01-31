@@ -59,7 +59,6 @@ exports.fees = function (db) {
 
 // Controller for compute transaction fee endpoint
 exports.computeTransactionFee = function (db) {
-  console.log(112, db.getAll());
   return (req, res) => {
     try {
       // deconstruct the req body to get;
@@ -100,7 +99,7 @@ exports.computeTransactionFee = function (db) {
       }
 
       // get fees from the database
-      const feeList = db.getAll().fees;
+      const feeList = db.get("fees");
 
       //
       let fees = [];
@@ -172,7 +171,6 @@ exports.computeTransactionFee = function (db) {
           code: 404,
           message: "No fee configuration for USD transactions.",
         });
-        console.log(res.body, 55);
         return;
       }
 
@@ -248,7 +246,6 @@ exports.computeTransactionFee = function (db) {
 exports.getDb = async (req, res) => {
   try {
     const results = db.getAll();
-    console.log(results.fees.length, "sss");
     sendSuccess(res, results);
   } catch (err) {
     sendError(res, { message: "failure" });

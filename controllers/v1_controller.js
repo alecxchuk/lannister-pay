@@ -1,5 +1,4 @@
 // const db = require("../db/db_helper");
-const { sampleDb } = require("../tests/test_helper");
 const { allIn } = require("../utils/check_array");
 const { sendSuccess, sendError } = require("../utils/responseHandler");
 
@@ -17,6 +16,9 @@ exports.fees = function (db) {
       // map the list to
       sampleList.map((sample) => {
         const payload = sample.split(" ");
+        if (payload.length !== 8) {
+          return;
+        }
         const fee_entity = payload[3].split("(")[0];
 
         // entity property
@@ -24,29 +26,24 @@ exports.fees = function (db) {
 
         // payload
         const testPayload = {
-          fee_id: payload[0],
-          fee_currency: payload[1],
-          fee_locale: payload[2],
-          fee_entity: fee_entity,
-          entity_property: entity_property,
-          fee_type: payload[6],
-          fee_value: payload[7],
+          fee_id: payload[0].trim(),
+          fee_currency: payload[1].trim(),
+          fee_locale: payload[2].trim(),
+          fee_entity: fee_entity.trim(),
+          entity_property: entity_property.trim(),
+          fee_type: payload[6].trim(),
+          fee_value: payload[7].trim(),
         };
         payloadList.push(testPayload);
       });
 
+      if (payloadList.length === 0) {
+        throw new Error("Invalid Fee Configuration spec");
+      }
       // save to db
       db.set("fees", payloadList);
 
       // success response
-      // sendSuccess(
-      //   res,
-      //   //{ results: payloadList.length, payloadList },
-      //   { status: "ok" },
-      //   "success",
-      //   200
-      // );
-
       return res.status(200).json({
         status: "ok",
       });
@@ -61,120 +58,152 @@ exports.fees = function (db) {
 exports.computeTransactionFee = function (db) {
   return (req, res) => {
     try {
-      // deconstruct the req body to get;
-      // Amount: The non-negative, numeric transaction amount.
-      // Currency: The transaction currency.
-      // CurrencyCountry: Country the transaction currency is applicable in. Useful for determining the transaction locale.
-      // PaymentEntity: An object representing the payment entity to be charged for the transaction.
-      // Customer: An object containing the customer information.
+      // deconstruct the req body;
       const { Amount, Currency, CurrencyCountry, PaymentEntity, Customer } =
         req.body;
       // deconstructing the payment entity object to get
-      // Issuer: The issuing company / organization for the entity e.g. Banks, Telco Providers / Wallet Service Providers.
-      // Brand: Applicable only to card-type transactions e.g. MASTERCARD, VISA, AMEX, VERVE e.t.c.
-      // Number:The payment entity number (masked pan in case of credit/debit cards, bank account numbers, mobile numbers, wallet ids e.t.c.)
-      // Type: the entity to be charged for the transaction e.g CREDIT-CARD, DEBIT-CARD, BANK-ACCOUNT, USSD, WALLET-ID
-      // Country:  the country of the payment entity
-      const { Issuer, Brand, Type, Country } = PaymentEntity;
+      const { ID, Issuer, Brand, Number, SixID, Type, Country } = PaymentEntity;
       // Deconstruct the customer object to get;
-      // BearsFee: Indicates whether or not the customer is set to bear the transaction cost.
       const { BearsFee } = Customer;
 
-      if (
-        Amount == null ||
-        Currency == null ||
-        CurrencyCountry == null ||
-        PaymentEntity == null ||
-        Customer == null ||
-        Issuer == null ||
-        Brand == null ||
-        Type == null ||
-        Country == null ||
-        BearsFee == null
-      ) {
-        return sendError(res, {
-          code: 400,
-          message: "Bad Request",
-        });
+      // relevant properties from request body
+      const relevantProps = [
+        "Amount",
+        "Currency",
+        "CurrencyCountry",
+        "PaymentEntity",
+        "Customer",
+      ];
+      // sub properties for payment
+      const paymentProps = [
+        "ID",
+        "Issuer",
+        "Number",
+        "SixID",
+        "Brand",
+        "Type",
+        "Country",
+      ];
+      // sub properties for customer
+      const customerProps = ["BearsFee"];
+
+      // possible fee entities
+      const feeEntityProps = [
+        "CREDIT-CARD",
+        "DEBIT-CARD",
+        "BANK-ACCOUNT",
+        "USSD",
+        "WALLET-ID",
+      ];
+
+      // Checking to make sure req body contains all the relevant props
+      for (let prop of relevantProps) {
+        if (!req.body.hasOwnProperty(prop)) {
+          throw new Error(`The property ${prop} is not defined`);
+        }
+        // checking if the payment entity object contains all the required props
+        if (prop === "PaymentEntity") {
+          for (let payProp of paymentProps) {
+            if (!req.body.PaymentEntity.hasOwnProperty(payProp)) {
+              throw new Error(
+                `The property '${payProp}' in 'PaymentEntity' is not defined`
+              );
+            }
+          }
+        } else if (prop === "Customer") {
+          // checking if the customer object contains all the required props
+          for (let customerProp of customerProps) {
+            if (!req.body.Customer.hasOwnProperty(customerProp)) {
+              throw new Error(
+                `The property '${customerProp}' in 'Customer' is not defined`
+              );
+            }
+          }
+        }
       }
 
-      // get fees from the database
+      // retrieve the fees configuration specs from the database
       const feeList = db.get("fees");
 
-      //
-      let fees = [];
+      if (feeList.length === 0) {
+        throw new Error("No fees configuration specs found");
+      }
 
-      // filters off a
-      fees = feeList.filter((fee) => fee.fee_currency === Currency);
+      // empty fees list for filtering
+      // this would hold the final fee configuration after filtering is done
+      // let fees = [];
+
+      let fees = feeList
+        .filter((fee) => fee.fee_currency === Currency)
+        .filter((fee) => {
+          // Checking if transaction is local or international
+          // if the CurrencyCountry and payment country are the same
+          // it is a local(LOCL) transaction and if not it is an
+          // international(INTL) transaction
+          if (CurrencyCountry === Country) {
+            // filtering out fees where fee_local is not designated 'LOCL' or '*'
+            return fee.fee_locale === "LOCL" || fee.fee_locale === "*";
+          } else {
+            // filtering out fees where fee_local is not designated 'INTL' or '*'
+            return fee.fee_locale === "INTL" || fee.fee_locale === "*";
+          }
+        })
+        .filter((fee) => fee.fee_entity === Type || fee.fee_entity === "*") // filter off fee entities that are same as the Type or '*'
+        .filter((fee) => {
+          /////// filtering off by the entity property ///////
+          // if the fee entity is USSD
+          // Remove items whose entity property is not same as Issuer from the request
+          // or '*'
+          for (let feeEntity of feeEntityProps) {
+            let _paymentProps = [];
+            if (feeEntity === "CREDIT-CARD" || feeEntity === "DEBIT-CARD") {
+              // Removing payment properties that cannot be applied to 'CREDIT-CARD' OR 'DEBIT-CARD' fee entity
+              // i.e "Type", "Country",
+              _paymentProps = paymentProps.slice(0, 5);
+            } else {
+              // removes brand, type and country from payment props
+              _paymentProps = paymentProps.slice(0, 4);
+            }
+
+            for (let item of _paymentProps) {
+              // Return the fee configuration that the entity property matches the value contained in the payment entity
+              // or contains '*'
+              return (
+                fee.entity_property === PaymentEntity[item] ||
+                fee.entity_property === "*"
+              );
+            }
+          }
+        });
+      fees = fees.filter((fee) => {
+        // checks if every value of fee_local is not '*'
+        // if so, removes all fees where fee_locale is '*'
+        if (!allIn(fees, "fee_locale")) {
+          return fee.fee_locale !== "*";
+        }
+
+        // checks if every value fee_entity is not '*'
+        // if so, removes all fees where fee_entity is '*'
+        if (!allIn(fees, "fee_entity")) {
+          return fee.fee_locale !== "*";
+        }
+
+        // checks if every value entity_property is not '*'
+        // if so, removes all fees where entity_property is '*'
+        if (!allIn(fees, "entity_property")) {
+          return fee.fee_locale !== "*";
+        }
+      });
 
       // local variable storing the applied fee value
       let AppliedFeeValue = 0;
       // local variable storing the charge amount
       let ChargeAmount = 0;
 
-      // Checking if transaction is local or international
-      // if the CurrencyCountry and payment country are the same
-      // it is a local(LOCL) transaction and if not it is an
-      // international(INTL) transaction
-      if (CurrencyCountry === Country) {
-        // filtering out fees where fee_local is not designated 'LOCL' or '*'
-        fees = fees.filter(
-          (fee) => fee.fee_locale === "LOCL" || fee.fee_locale === "*"
-        );
-      } else {
-        // filtering out fees where fee_local is not designated 'INTL' or '*'
-        fees = fees.filter(
-          (fee) => fee.fee_locale === "INTL" || fee.fee_locale === "*"
-        );
-      }
-
-      // filter off fee entities that are same as the Type or '*'
-      fees = fees.filter(
-        (fee) => fee.fee_entity === Type || fee.fee_entity === "*"
-      );
-
-      // filter off by the entity property
-      fees = fees.filter((fee) => {
-        // if the fee entity is USSD
-        // Remove items whose entity property is not same as Issuer from the request
-        // or '*'
-        if (fee.fee_entity === "USSD") {
-          return fee.entity_property === Issuer || fee.entity_property === "*";
-        } else {
-          // Remove items whose entity property is not same as Brand from the request
-          return fee.entity_property === Brand || fee.entity_property === "*";
-        }
-      });
-
-      // checks if every value of fee_local is not '*'
-      // if so, removes all fees where fee_locale is '*'
-      if (!allIn(fees, "fee_locale")) {
-        fees = fees.filter((fee) => fee.fee_locale !== "*");
-      }
-
-      // checks if every value fee_entity is not '*'
-      // if so, removes all fees where fee_entity is '*'
-      if (!allIn(fees, "fee_entity")) {
-        fees = fees.filter((fee) => fee.fee_locale !== "*");
-      }
-
-      // checks if every value entity_property is not '*'
-      // if so, removes all fees where entity_property is '*'
-      if (!allIn(fees, "entity_property")) {
-        fees = fees.filter((fee) => fee.fee_locale !== "*");
-      }
-
-      // checking to see if there are not applicable fees
-      // returns an error when there is no applicable fee
       if (fees.length === 0) {
         return res
           .status(404)
           .json({ Error: "No fee configuration for USD transactions." });
-        // sendError(res, {
-        //   code: 404,
-        //   message: "No fee configuration for USD transactions.",
-        // });
-        // return;
       }
 
       // gets the fee type
@@ -223,10 +252,6 @@ exports.computeTransactionFee = function (db) {
       }
 
       // object holding the response
-      // AppliedFeeID: ID of the fee charge applied
-      // AppliedFeeValue: applied fee value
-      // ChargeAmount: charge amount
-      // SettlementAmount: settlement amount
       let payload = {
         AppliedFeeID: feeId,
         AppliedFeeValue: AppliedFeeValue,
@@ -234,14 +259,9 @@ exports.computeTransactionFee = function (db) {
         SettlementAmount: ChargeAmount - AppliedFeeValue,
       };
       // returns response
-      // sendSuccess(res, payload, "HTTP 200 OK", 200);
       return res.status(200).json(payload);
     } catch (err) {
-      console.log(err);
-      sendError(res, {
-        code: 400,
-        message: `Unexpected error: Does not understand fee type`,
-      });
+      sendError(res, err);
     }
   };
 };

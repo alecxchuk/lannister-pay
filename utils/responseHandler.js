@@ -1,9 +1,10 @@
 // Handles success responses
 const sendSuccess = (response, data = {}, message = "success", code = 200) => {
   const resp = {
-    data,
-    message,
-    statuscode: code,
+    status: "ok",
+    // data,
+    // message,
+    // statuscode: code,
   };
   return response.status(code).json(resp);
 };

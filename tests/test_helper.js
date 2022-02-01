@@ -2,6 +2,8 @@ exports.testConfigSpecs = {
   FeeConfigurationSpec: "LNPY1221 NGN * *(*) : APPLY PERC 1.4",
 };
 
+exports.feeSpec =
+  "LNPY1221 NGN * *(*) : APPLY PERC 1.4\nsac fdfv dfaccaacac\nLNPY1221 NGN * *(*) : APPLY PERC 1.4";
 exports.expectedFeePayload = {
   fee_id: "LNPY1221",
   fee_currency: "NGN",

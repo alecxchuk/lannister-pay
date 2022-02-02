@@ -72,7 +72,7 @@ describe("/fees", () => {
       const response = await request(app).post("/fees").send({
         FeeConfigurationSpec: "LNPY1221 NGN * *(*) : APPLY PERC 1.4",
       });
-      expect(response.body.data.status).toBe("ok");
+      expect(response.body.status).toBe("ok");
     });
   });
 
@@ -106,7 +106,9 @@ describe("/compute-transaction-fee", () => {
   describe("When giving the Amount, Currency, CurrencyCountry, PaymentEntity, Customer,Issuer, Brand, Type, Country", () => {
     // should get fees configurations from database
     test("should get configuration spec from the database", async () => {
-      await request(app).post("/compute-transaction-fee").send(computeTestData);
+      await request(app)
+        .post("/compute-transaction-fee")
+        .send(computeTestRequests[1]);
       // getall function should be called only once
       expect(get.mock.calls.length).toBe(1);
     });
@@ -116,7 +118,7 @@ describe("/compute-transaction-fee", () => {
         const response = await request(app)
           .post("/compute-transaction-fee")
           .send(computeTestRequests[i]);
-        expect(response.body.data).toEqual(computeTestResponses[i]);
+        expect(response.body).toEqual(computeTestResponses[i]);
       }
     });
 
@@ -124,20 +126,20 @@ describe("/compute-transaction-fee", () => {
       const response = await request(app)
         .post("/compute-transaction-fee")
         .send(computeTestRequests[2]);
-      expect(response.body).toEqual(computeTestResponses[2]);
+      expect(response.body).toStrictEqual(computeTestResponses[2]);
     });
 
     test("should respond with a 200 status code", async () => {
       const response = await request(app)
         .post("/compute-transaction-fee")
-        .send(computeTestData);
+        .send(computeTestRequests[0]);
       expect(response.statusCode).toBe(200);
     });
 
     test("should specify json in the content type header", async () => {
       const response = await request(app)
         .post("/compute-transaction-fee")
-        .send(computeTestData);
+        .send(computeTestRequests[0]);
       expect(response.headers["content-type"]).toEqual(
         expect.stringContaining("json")
       );
@@ -146,56 +148,56 @@ describe("/compute-transaction-fee", () => {
     test("response has AppliedFeeID", async () => {
       const response = await request(app)
         .post("/compute-transaction-fee")
-        .send(computeTestData);
-      expect(response.body.data.AppliedFeeID).toBeDefined();
+        .send(computeTestRequests[0]);
+      expect(response.body.AppliedFeeID).toBeDefined();
     });
 
     test("response type of AppliedFeeID should be string", async () => {
       const response = await request(app)
         .post("/compute-transaction-fee")
-        .send(computeTestData);
-      expect(typeof response.body.data.AppliedFeeID).toBe("string");
+        .send(computeTestRequests[0]);
+      expect(typeof response.body.AppliedFeeID).toBe("string");
     });
 
     test("response has AppliedFeeValue", async () => {
       const response = await request(app)
         .post("/compute-transaction-fee")
-        .send(computeTestData);
-      expect(response.body.data.AppliedFeeValue).toBeDefined();
+        .send(computeTestRequests[0]);
+      expect(response.body.AppliedFeeValue).toBeDefined();
     });
     test("response type of AppliedFeeValue should be number", async () => {
       const response = await request(app)
         .post("/compute-transaction-fee")
-        .send(computeTestData);
-      expect(typeof response.body.data.AppliedFeeValue).toBe("number");
+        .send(computeTestRequests[0]);
+      expect(typeof response.body.AppliedFeeValue).toBe("number");
     });
 
     test("response has ChargeAmount", async () => {
       const response = await request(app)
         .post("/compute-transaction-fee")
-        .send(computeTestData);
-      expect(response.body.data.ChargeAmount).toBeDefined();
+        .send(computeTestRequests[0]);
+      expect(response.body.ChargeAmount).toBeDefined();
     });
 
     test("response type of ChargeAmount should be number", async () => {
       const response = await request(app)
         .post("/compute-transaction-fee")
-        .send(computeTestData);
-      expect(typeof response.body.data.ChargeAmount).toBe("number");
+        .send(computeTestRequests[0]);
+      expect(typeof response.body.ChargeAmount).toBe("number");
     });
 
     test("response has SettlementAmount", async () => {
       const response = await request(app)
         .post("/compute-transaction-fee")
-        .send(computeTestData);
-      expect(response.body.data.SettlementAmount).toBeDefined();
+        .send(computeTestRequests[0]);
+      expect(response.body.SettlementAmount).toBeDefined();
     });
 
     test("response type of SettlementAmount should be number", async () => {
       const response = await request(app)
         .post("/compute-transaction-fee")
-        .send(computeTestData);
-      expect(typeof response.body.data.SettlementAmount).toBe("number");
+        .send(computeTestRequests[0]);
+      expect(typeof response.body.SettlementAmount).toBe("number");
     });
   });
 

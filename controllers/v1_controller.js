@@ -123,8 +123,9 @@ exports.computeTransactionFee = function (db) {
       }
 
       // retrieve the fees configuration specs from the database
+      // const feeList = db.get("fees");
       const feeList = db.get("fees");
-
+      console.log("aba");
       if (feeList.length === 0) {
         throw new Error("No fees configuration specs found");
       }
@@ -175,6 +176,7 @@ exports.computeTransactionFee = function (db) {
             }
           }
         });
+
       fees = fees.filter((fee) => {
         // checks if every value of fee_local is not '*'
         // if so, removes all fees where fee_locale is '*'
@@ -185,16 +187,17 @@ exports.computeTransactionFee = function (db) {
         // checks if every value fee_entity is not '*'
         // if so, removes all fees where fee_entity is '*'
         if (!allIn(fees, "fee_entity")) {
-          return fee.fee_locale !== "*";
+          return fee.feeEntity !== "*";
         }
 
         // checks if every value entity_property is not '*'
         // if so, removes all fees where entity_property is '*'
         if (!allIn(fees, "entity_property")) {
-          return fee.fee_locale !== "*";
+          return fee.entity_property !== "*";
         }
+        return fee;
       });
-
+      console.log(fees, 999);
       // local variable storing the applied fee value
       let AppliedFeeValue = 0;
       // local variable storing the charge amount

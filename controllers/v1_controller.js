@@ -125,7 +125,6 @@ exports.computeTransactionFee = function (db) {
       // retrieve the fees configuration specs from the database
       // const feeList = db.get("fees");
       const feeList = db.get("fees");
-      console.log("aba");
       if (feeList.length === 0) {
         throw new Error("No fees configuration specs found");
       }
@@ -197,7 +196,6 @@ exports.computeTransactionFee = function (db) {
         }
         return fee;
       });
-      console.log(fees, 999);
       // local variable storing the applied fee value
       let AppliedFeeValue = 0;
       // local variable storing the charge amount

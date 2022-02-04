@@ -1,10 +1,11 @@
 // const db = require("../db/db_helper");
+const responseTime = require("response-time");
 const { allIn } = require("../utils/check_array");
 const { sendSuccess, sendError } = require("../utils/responseHandler");
 
 // Controller for fees endpoint
 exports.fees = function (db) {
-  return (req, res) => {
+  return responseTime((req, res, time) => {
     try {
       // destruction req.body
       // const { FeeConfigurationSpec } = req.body;
@@ -45,13 +46,13 @@ exports.fees = function (db) {
 
       // success response
       return res.status(200).json({
-        status: "okse",
+        status: `${time}ms`,
       });
     } catch (err) {
       // error
       sendError(res, { message: "failure" });
     }
-  };
+  });
 };
 
 // Controller for compute transaction fee endpoint

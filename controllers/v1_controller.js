@@ -7,45 +7,45 @@ exports.fees = function (db) {
   return (req, res) => {
     try {
       // destruction req.body
-      const { FeeConfigurationSpec } = req.body;
-      // arr for the payload
-      let payloadList = [];
-      // split response to get each fee value
-      const sampleList = FeeConfigurationSpec.split("\n");
+      // const { FeeConfigurationSpec } = req.body;
+      // // arr for the payload
+      // let payloadList = [];
+      // // split response to get each fee value
+      // const sampleList = FeeConfigurationSpec.split("\n");
 
-      // map the list to
-      sampleList.map((sample) => {
-        const payload = sample.split(" ");
-        if (payload.length !== 8) {
-          return;
-        }
-        const fee_entity = payload[3].split("(")[0];
+      // // map the list to
+      // sampleList.map((sample) => {
+      //   const payload = sample.split(" ");
+      //   if (payload.length !== 8) {
+      //     return;
+      //   }
+      //   const fee_entity = payload[3].split("(")[0];
 
-        // entity property
-        const entity_property = payload[3].split("(")[1].split(")")[0];
+      //   // entity property
+      //   const entity_property = payload[3].split("(")[1].split(")")[0];
 
-        // payload
-        const testPayload = {
-          fee_id: payload[0].trim(),
-          fee_currency: payload[1].trim(),
-          fee_locale: payload[2].trim(),
-          fee_entity: fee_entity.trim(),
-          entity_property: entity_property.trim(),
-          fee_type: payload[6].trim(),
-          fee_value: payload[7].trim(),
-        };
-        payloadList.push(testPayload);
-      });
+      //   // payload
+      //   const testPayload = {
+      //     fee_id: payload[0].trim(),
+      //     fee_currency: payload[1].trim(),
+      //     fee_locale: payload[2].trim(),
+      //     fee_entity: fee_entity.trim(),
+      //     entity_property: entity_property.trim(),
+      //     fee_type: payload[6].trim(),
+      //     fee_value: payload[7].trim(),
+      //   };
+      //   payloadList.push(testPayload);
+      // });
 
-      if (payloadList.length === 0) {
-        throw new Error("Invalid Fee Configuration spec");
-      }
+      // if (payloadList.length === 0) {
+      //   throw new Error("Invalid Fee Configuration spec");
+      // }
       // save to db
       // db.set("fees", payloadList);
 
       // success response
       return res.status(200).json({
-        status: "oks",
+        status: "okse",
       });
     } catch (err) {
       // error

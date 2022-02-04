@@ -41,7 +41,7 @@ exports.fees = function (db) {
         throw new Error("Invalid Fee Configuration spec");
       }
       // save to db
-      db.set("fees", payloadList);
+      // db.set("fees", payloadList);
 
       // success response
       return res.status(200).json({
@@ -123,8 +123,8 @@ exports.computeTransactionFee = function (db) {
       }
 
       // retrieve the fees configuration specs from the database
-      // const feeList = db.get("fees");
       const feeList = db.get("fees");
+      // Throw error if there is no valid fee configuration spec
       if (feeList.length === 0) {
         throw new Error("No fees configuration specs found");
       }
@@ -132,7 +132,6 @@ exports.computeTransactionFee = function (db) {
       // empty fees list for filtering
       // this would hold the final fee configuration after filtering is done
       // let fees = [];
-
       let fees = feeList
         .filter((fee) => fee.fee_currency === Currency)
         .filter((fee) => {
@@ -149,30 +148,15 @@ exports.computeTransactionFee = function (db) {
           }
         })
         .filter((fee) => fee.fee_entity === Type || fee.fee_entity === "*") // filter off fee entities that are same as the Type or '*'
-        .filter((fee) => {
-          /////// filtering off by the entity property ///////
-          // if the fee entity is USSD
-          // Remove items whose entity property is not same as Issuer from the request
-          // or '*'
-          for (let feeEntity of feeEntityProps) {
-            let _paymentProps = [];
-            if (feeEntity === "CREDIT-CARD" || feeEntity === "DEBIT-CARD") {
-              // Removing payment properties that cannot be applied to 'CREDIT-CARD' OR 'DEBIT-CARD' fee entity
-              // i.e "Type", "Country",
-              _paymentProps = paymentProps.slice(0, 5);
-            } else {
-              // removes brand, type and country from payment props
-              _paymentProps = paymentProps.slice(0, 4);
-            }
 
-            for (let item of _paymentProps) {
-              // Return the fee configuration that the entity property matches the value contained in the payment entity
-              // or contains '*'
-              return (
-                fee.entity_property === PaymentEntity[item] ||
-                fee.entity_property === "*"
-              );
-            }
+        // Return the fee configuration that the entity property matches the value contained in the payment entity
+        // or contains '*'
+        .filter((fee) => {
+          for (let item of paymentProps) {
+            return (
+              fee.entity_property.toString() ===
+                PaymentEntity[item].toString() || fee.entity_property === "*"
+            );
           }
         });
 
@@ -272,7 +256,8 @@ exports.getDb = function (db) {
   return (req, res) => {
     try {
       const results = db.getAll();
-      sendSuccess(res, results);
+      return res.status(200).json(results);
+      // return sendSuccess(res, results);
     } catch (err) {
       sendError(res, { message: "failure" });
     }

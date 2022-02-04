@@ -1,14 +1,17 @@
 // const db = require("../db/db_helper");
-const responseTime = require("response-time");
 const { allIn } = require("../utils/check_array");
 const { sendSuccess, sendError } = require("../utils/responseHandler");
 
 // Controller for fees endpoint
 exports.fees = function (db) {
-  return responseTime((req, res, time) => {
+  return (req, res) => {
     try {
       // destruction req.body
-      // const { FeeConfigurationSpec } = req.body;
+      const { FeeConfigurationSpec } = req.body;
+
+      if (!req.body.hasOwnProperty("FeeConfigurationSpec")) {
+        throw new Error("The property FeeConfigurationSpec is not defined");
+      }
       // arr for the payload
       let payloadList = [];
       // split response to get each fee value
@@ -20,20 +23,55 @@ exports.fees = function (db) {
         if (payload.length !== 8) {
           return;
         }
-        const fee_entity = payload[3].split("(")[0];
 
+        const fee_id = payload[0].trim();
+        const fee_currency = payload[1].trim();
+        const fee_locale = payload[2].trim();
+
+        // Fee entity
+        const fee_entity = payload[3].split("(")[0].trim();
         // entity property
-        const entity_property = payload[3].split("(")[1].split(")")[0];
+        const entity_property = payload[3].split("(")[1].split(")")[0].trim();
+        const fee_type = payload[6].trim();
+        const fee_value = payload[7].trim();
+
+        // relevant properties from request body
+        // const relevantProps = [
+        //   fee_id,
+        //   fee_currency,
+        //   fee_locale,
+        //   fee_entity,
+        //   entity_property,
+        //   fee_type,
+        //   fee_value,
+        // ];
+
+        //   for (let prop of relevantProps){
+        //     if (!prop){
+        //       throw new Error(`Invalid`);
+        //     }
+        //   }
+        if (
+          !fee_id ||
+          !fee_currency ||
+          !fee_locale ||
+          !fee_entity ||
+          !entity_property ||
+          !fee_type ||
+          !fee_value
+        ) {
+          throw new Error("Invalid fee Configuration");
+        }
 
         // payload
         const testPayload = {
-          fee_id: payload[0].trim(),
-          fee_currency: payload[1].trim(),
-          fee_locale: payload[2].trim(),
-          fee_entity: fee_entity.trim(),
-          entity_property: entity_property.trim(),
-          fee_type: payload[6].trim(),
-          fee_value: payload[7].trim(),
+          fee_id: fee_id,
+          fee_currency: fee_currency,
+          fee_locale: fee_locale,
+          fee_entity: fee_entity,
+          entity_property: entity_property,
+          fee_type: fee_type,
+          fee_value: fee_value,
         };
         payloadList.push(testPayload);
       });
@@ -46,13 +84,13 @@ exports.fees = function (db) {
 
       // success response
       return res.status(200).json({
-        status: `"okse"`,
+        status: "okse",
       });
     } catch (err) {
       // error
-      sendError(res, { message: "failure" });
+      sendError(res, { message: err.message });
     }
-  });
+  };
 };
 
 // Controller for compute transaction fee endpoint

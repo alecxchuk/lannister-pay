@@ -2,18 +2,15 @@ require("dotenv").config();
 
 // express
 const express = require("express");
-var responseTime = require("response-time");
-
 // database helper
 // const db = require("./db/db_helper");
+const morgan = require("morgan");
+
 module.exports = function (database) {
   const app = express();
   app.use(express.json());
-  app.use(
-    responseTime((req, res, time) => {
-      console.log("lol", req.url, time + "ms");
-    })
-  );
+  app.use(morgan("dev"));
+
   // cors
   const cors = require("cors");
   app.use(cors());

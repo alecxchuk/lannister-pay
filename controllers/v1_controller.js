@@ -45,7 +45,7 @@ exports.fees = function (db) {
 
       // success response
       return res.status(200).json({
-        status: "ok",
+        status: "oks",
       });
     } catch (err) {
       // error

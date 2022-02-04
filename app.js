@@ -3,16 +3,17 @@ require("dotenv").config();
 // express
 const express = require("express");
 var responseTime = require("response-time");
-app.use(
-  responseTime((req, res, time) => {
-    console.log(req.method, req.url, time + "ms");
-  })
-);
+
 // database helper
 // const db = require("./db/db_helper");
 module.exports = function (database) {
   const app = express();
   app.use(express.json());
+  app.use(
+    responseTime((req, res, time) => {
+      console.log(req.method, req.url, time + "ms");
+    })
+  );
   // cors
   const cors = require("cors");
   app.use(cors());

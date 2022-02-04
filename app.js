@@ -11,7 +11,7 @@ module.exports = function (database) {
   app.use(express.json());
   app.use(
     responseTime((req, res, time) => {
-      console.log(req.method, req.url, time + "ms");
+      console.log("lol", req.url, time + "ms");
     })
   );
   // cors

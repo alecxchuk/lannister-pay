@@ -1,5 +1,11 @@
 const request = require("supertest");
 const makeApp = require("../app");
+const {
+  invalidFeeConfig,
+  notDefined,
+  invalidPayment,
+  invalidType,
+} = require("../utils/responseMessages");
 
 // mock function using jest
 const get = jest.fn();
@@ -14,6 +20,9 @@ const {
   sampleDb,
   computeTestResponses,
   computeTestRequests,
+  feeSpecProps,
+  feeSpecData,
+  compBodyStrings,
 } = require("./test_helper");
 
 describe("/fees", () => {
@@ -38,15 +47,6 @@ describe("/fees", () => {
         expect.arrayContaining([expect.objectContaining(expectedFeePayload)])
       );
     });
-
-    // test("should respond with a json object containg the user id", async () => {
-    //     for (let i = 0; i < 10; i++) {
-    //       createUser.mockReset()
-    //       createUser.mockResolvedValue(i)
-    //       const response = await request(app).post("/users").send({ username: "username", password: "password" })
-    //       expect(response.body.userId).toBe(i)
-    //     }
-    //   })
 
     // should return response with the configuration spec
     // should return a response with 200 status code
@@ -81,16 +81,97 @@ describe("/fees", () => {
     test("should respond with a 400 status code", async () => {
       const response = await request(app).post("/fees").send({});
       expect(response.statusCode).toBe(400);
+      expect(response.body.Error).toBe(
+        "The property FeeConfigurationSpec is not defined"
+      );
+    });
+  });
+  describe("When giving a fee configuration that is not of type string", () => {
+    // should respond with a status code of 400
+    test("should respond with a 400 status code", async () => {
+      const response = await request(app)
+        .post("/fees")
+        .send({ FeeConfigurationSpec: [] });
+      expect(response.statusCode).toBe(400);
+      expect(response.body.Error).toBe(
+        "Fee configuration spec should be a string"
+      );
     });
   });
 
-  describe("When giving an invalid fee configuration spec", () => {
-    test("should respond with a 400 status code", async () => {
+  describe("When given an invalid fee configuration spec", () => {
+    test("should respond with a 400 status code and error", async () => {
       const response = await request(app).post("/fees").send({
         FeeConfigurationSpec: "",
       });
       expect(response.statusCode).toBe(400);
+      expect(response.body).toMatchObject({
+        Error: invalidFeeConfig, //"Invalid fee configuration spec",
+      });
     });
+    test("should respond with a 400 status code and error", async () => {
+      const response = await request(app).post("/fees").send({
+        FeeConfigurationSpec: "LNPY1221 NGN * *(*) :APPLY PERC 1.4",
+      });
+      expect(response.statusCode).toBe(400);
+      expect(response.body).toMatchObject({
+        Error: invalidFeeConfig, //"Invalid Fee configuration specs",
+      });
+    });
+  });
+
+  describe("When given an invalid fee type", () => {
+    test("should respond with a 400 status code and error", async () => {
+      const response = await request(app).post("/fees").send({
+        FeeConfigurationSpec: "LNPY1221 NGN * *(*) : APPLY PERCS 1.4",
+      });
+      expect(response.statusCode).toBe(400);
+      expect(response.body).toMatchObject({
+        Error: "PERCS is not a valid fee type", // "PERCS is not recognized as a valid fee type",
+      });
+    });
+  });
+
+  describe("When given an invalid fee entity", () => {
+    test("should respond with a 400 status code and error", async () => {
+      const response = await request(app).post("/fees").send({
+        FeeConfigurationSpec: "LNPY1221 NGN * ESUSU(*) : APPLY PERC 1.4",
+      });
+      expect(response.statusCode).toBe(400);
+      expect(response.body).toMatchObject({
+        Error: "ESUSU is not a valid fee entity",
+      });
+    });
+  });
+
+  describe("When given an invalid fee locale", () => {
+    test("should respond with a 400 status code and error", async () => {
+      const response = await request(app).post("/fees").send({
+        FeeConfigurationSpec:
+          "LNPY1221 NGN VILLAGE CREDIT-CARD(*) : APPLY PERC 1.4",
+      });
+      expect(response.statusCode).toBe(400);
+      expect(response.body).toMatchObject({
+        Error: "VILLAGE is not a valid fee locale",
+      });
+    });
+  });
+
+  describe("When given an invalid fee value for FLAT_PERC", () => {
+    const specs = [":1.4", "50:", "50:x", "x:1.4", "50:x"];
+    for (let spec of specs) {
+      let specReq = `LNPY1221 NGN * CREDIT-CARD(*) : APPLY FLAT_PERC ${spec}`;
+      let specRes = `${spec} is not a valid FLAT_PERC fee value`;
+      test("should respond with a 400 status code and error", async () => {
+        const response = await request(app).post("/fees").send({
+          FeeConfigurationSpec: specReq,
+        });
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toMatchObject({
+          Error: specRes,
+        });
+      });
+    }
   });
 });
 
@@ -201,13 +282,233 @@ describe("/compute-transaction-fee", () => {
     });
   });
 
+  describe("When no payment transaction is given", () => {
+    test("should respond with a 400 status code", async () => {
+      const response = await request(app)
+        .post("/compute-transaction-fee")
+        .send({});
+      expect(response.statusCode).toBe(400);
+      expect(response.body).toMatchObject({
+        Error: invalidPayment,
+      });
+    });
+  });
+
   describe("When the Amount, Currency, CurrencyCountry, PaymentEntity, Customer,Issuer, Brand, Type, Country is missing", () => {
     test("should respond with a 400 status code", async () => {
       for (const body of bodyData) {
+        const index = bodyData.indexOf(body);
         const response = await request(app)
           .post("/compute-transaction-fee")
           .send(body);
         expect(response.statusCode).toBe(400);
+        expect(response.body).toMatchObject({
+          Error: notDefined(compBodyStrings[index]),
+        });
+      }
+    });
+  });
+  describe("When given an amount that is not a number", () => {
+    test("should respond with a 400 status code", async () => {
+      const response = await request(app)
+        .post("/compute-transaction-fee")
+        .send({
+          ID: "91204",
+          Amount: "aaa",
+          Currency: "NGN",
+          CurrencyCountry: "NG",
+          Customer: {
+            ID: 4211232,
+            EmailAddress: "anonimized292200@anon.io",
+            FullName: "Wenthorth Scoffield",
+            BearsFee: false,
+          },
+          PaymentEntity: {
+            ID: 2203454,
+            Issuer: "AIRTEL",
+            Brand: "",
+            Number: "080234******2903",
+            SixID: "080234",
+            Type: "USSD",
+            Country: "NG",
+          },
+        });
+      expect(response.statusCode).toBe(400);
+      expect(response.body).toMatchObject({
+        Error: invalidType("Amount", "number"),
+      });
+    });
+  });
+  describe("When given currency or currency country that is not a string", () => {
+    test("should respond with a 400 status code", async () => {
+      const body = [
+        {
+          ID: "91204",
+          Amount: 5000,
+          Currency: 111,
+          CurrencyCountry: "NG",
+          Customer: {
+            ID: 4211232,
+            EmailAddress: "anonimized292200@anon.io",
+            FullName: "Wenthorth Scoffield",
+            BearsFee: false,
+          },
+          PaymentEntity: {
+            ID: 2203454,
+            Issuer: "AIRTEL",
+            Brand: "",
+            Number: "080234******2903",
+            SixID: "080234",
+            Type: "USSD",
+            Country: "NG",
+          },
+        },
+        {
+          ID: "91204",
+          Amount: 5000,
+          Currency: "NGN",
+          CurrencyCountry: 222,
+          Customer: {
+            ID: 4211232,
+            EmailAddress: "anonimized292200@anon.io",
+            FullName: "Wenthorth Scoffield",
+            BearsFee: false,
+          },
+          PaymentEntity: {
+            ID: 2203454,
+            Issuer: "AIRTEL",
+            Brand: "",
+            Number: "080234******2903",
+            SixID: "080234",
+            Type: "USSD",
+            Country: "NG",
+          },
+        },
+      ];
+      for (let prop of body) {
+        const index = body.indexOf(prop);
+        let err = invalidType(
+          index === 0 ? "Currency" : "CurrencyCountry",
+          "string"
+        );
+        const response = await request(app)
+          .post("/compute-transaction-fee")
+          .send(prop);
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toMatchObject({
+          Error: err,
+        });
+      }
+    });
+  });
+  describe("When given payment entity or customer that is not a string", () => {
+    test("should respond with a 400 status code", async () => {
+      const body = [
+        {
+          ID: "91204",
+          Amount: 5000,
+          Currency: "NGN",
+          CurrencyCountry: "NG",
+          Customer: "lol",
+
+          PaymentEntity: {
+            ID: 2203454,
+            Issuer: "AIRTEL",
+            Brand: "",
+            Number: "080234******2903",
+            SixID: "080234",
+            Type: "USSD",
+            Country: "NG",
+          },
+        },
+        {
+          ID: "91204",
+          Amount: 5000,
+          Currency: "NGN",
+          CurrencyCountry: "NG",
+          Customer: {
+            ID: 4211232,
+            EmailAddress: "anonimized292200@anon.io",
+            FullName: "Wenthorth Scoffield",
+            BearsFee: false,
+          },
+          PaymentEntity: "lol",
+        },
+      ];
+      for (let prop of body) {
+        const index = body.indexOf(prop);
+        let err = invalidType(
+          index === 0 ? "Customer" : "PaymentEntity",
+          "object"
+        );
+        const response = await request(app)
+          .post("/compute-transaction-fee")
+          .send(prop);
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toMatchObject({
+          Error: err,
+        });
+      }
+    });
+  });
+
+  describe("When given a transaction  that does not match", () => {
+    test("should respond with a 404 status code", async () => {
+      const body = [
+        {
+          ID: "91204",
+          Amount: 5000,
+          Currency: "USD",
+          CurrencyCountry: "NG",
+          Customer: {
+            ID: 4211232,
+            EmailAddress: "anonimized292200@anon.io",
+            FullName: "Wenthorth Scoffield",
+            BearsFee: false,
+          },
+          PaymentEntity: {
+            ID: 2203454,
+            Issuer: "AIRTEL",
+            Brand: "",
+            Number: "080234******2903",
+            SixID: "080234",
+            Type: "USSD",
+            Country: "NG",
+          },
+        },
+        {
+          ID: "91204",
+          Amount: 5000,
+          Currency: "NGN",
+          CurrencyCountry: "NG",
+          Customer: {
+            ID: 4211232,
+            EmailAddress: "anonimized292200@anon.io",
+            FullName: "Wenthorth Scoffield",
+            BearsFee: false,
+          },
+          PaymentEntity: {
+            ID: 2203454,
+            Issuer: "AIRTEL",
+            Brand: "",
+            Number: "080234******2903",
+            SixID: "080234",
+            Type: "WALLET-ID",
+            Country: "NG",
+          },
+        },
+      ];
+      for (let prop of body) {
+        const index = body.indexOf(prop);
+        let err = index === 0 ? "USD" : "WALLET-ID";
+
+        const response = await request(app)
+          .post("/compute-transaction-fee")
+          .send(prop);
+        expect(response.statusCode).toBe(404);
+        expect(response.body).toMatchObject({
+          Error: `No fee configuration for ${err} transactions.`,
+        });
       }
     });
   });

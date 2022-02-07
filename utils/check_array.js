@@ -1,4 +1,4 @@
-const { paymentProps } = require("./string_helpers.JS");
+const { paymentProps } = require("./string_helpers");
 
 exports.allIn = (arr, check) => arr.every((val) => val[check] === "*");
 

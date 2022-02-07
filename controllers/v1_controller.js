@@ -12,12 +12,15 @@ const {
   noFeeConfig,
   invalidPayment,
 } = require("../utils/responseMessages");
-const { customerProps } = require("../utils/string_helpers.JS");
-const { relevantProps } = require("../utils/string_helpers.JS");
-const { paymentProps } = require("../utils/string_helpers.JS");
-const { validFeeLocales } = require("../utils/string_helpers.JS");
-const { validFeeEntities } = require("../utils/string_helpers.JS");
-const { feeEntityProps } = require("../utils/string_helpers.JS");
+
+const {
+  relevantProps,
+  customerProps,
+  paymentProps,
+  validFeeLocales,
+  validFeeEntities,
+  feeEntityProps,
+} = require("../utils/string_helpers");
 
 // Controller for fees endpoint
 exports.fees = function (db) {

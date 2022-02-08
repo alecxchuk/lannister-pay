@@ -2,6 +2,8 @@ exports.testConfigSpecs = {
   FeeConfigurationSpec: "LNPY1221 NGN * *(*) : APPLY PERC 1.4",
 };
 
+exports.feeSpec =
+  "LNPY1221 NGN * *(*) : APPLY PERC 1.4\nsac fdfv dfaccaacac\nLNPY1221 NGN * *(*) : APPLY PERC 1.4";
 exports.expectedFeePayload = {
   fee_id: "LNPY1221",
   fee_currency: "NGN",
@@ -18,7 +20,7 @@ exports.sampleDb = {
       fee_id: "LNPY1221",
       fee_currency: "NGN",
       fee_locale: "*",
-      fee_entity: "*",
+      fee_entity: "USSD",
       entity_property: "*",
       fee_type: "PERC",
       fee_value: "1.4",
@@ -70,8 +72,11 @@ exports.bodyData = [
       BearsFee: true,
     },
     PaymentEntity: {
+      ID: 2203454,
       Issuer: "GTBANK",
       Brand: "MASTERCARD",
+      Number: "080234******2903",
+      SixID: "080234",
       Type: "CREDIT-CARD",
       Country: "NG",
     },
@@ -83,8 +88,11 @@ exports.bodyData = [
       BearsFee: true,
     },
     PaymentEntity: {
+      ID: 2203454,
       Issuer: "GTBANK",
       Brand: "MASTERCARD",
+      Number: "080234******2903",
+      SixID: "080234",
       Type: "CREDIT-CARD",
       Country: "NG",
     },
@@ -96,8 +104,11 @@ exports.bodyData = [
       BearsFee: true,
     },
     PaymentEntity: {
+      ID: 2203454,
       Issuer: "GTBANK",
       Brand: "MASTERCARD",
+      Number: "080234******2903",
+      SixID: "080234",
       Type: "CREDIT-CARD",
       Country: "NG",
     },
@@ -108,8 +119,11 @@ exports.bodyData = [
     CurrencyCountry: "NG",
 
     PaymentEntity: {
+      ID: 2203454,
       Issuer: "GTBANK",
       Brand: "MASTERCARD",
+      Number: "080234******2903",
+      SixID: "080234",
       Type: "CREDIT-CARD",
       Country: "NG",
     },
@@ -120,8 +134,11 @@ exports.bodyData = [
     CurrencyCountry: "NG",
     Customer: {},
     PaymentEntity: {
+      ID: 2203454,
       Issuer: "GTBANK",
       Brand: "MASTERCARD",
+      Number: "080234******2903",
+      SixID: "080234",
       Type: "CREDIT-CARD",
       Country: "NG",
     },
@@ -142,7 +159,10 @@ exports.bodyData = [
       BearsFee: true,
     },
     PaymentEntity: {
+      Issuer: "GTBANK",
       Brand: "MASTERCARD",
+      Number: "080234******2903",
+      SixID: "080234",
       Type: "CREDIT-CARD",
       Country: "NG",
     },
@@ -155,12 +175,16 @@ exports.bodyData = [
       BearsFee: true,
     },
     PaymentEntity: {
-      Issuer: "GTBANK",
+      ID: 2203454,
+      Brand: "MASTERCARD",
+      Number: "080234******2903",
+      SixID: "080234",
       Type: "CREDIT-CARD",
       Country: "NG",
     },
   },
   {
+    ID: 2203454,
     Amount: 5000,
     Currency: "NGN",
     CurrencyCountry: "NG",
@@ -168,12 +192,16 @@ exports.bodyData = [
       BearsFee: true,
     },
     PaymentEntity: {
+      ID: 2203454,
       Issuer: "GTBANK",
-      Brand: "MASTERCARD",
+      Number: "080234******2903",
+      SixID: "080234",
+      Type: "CREDIT-CARD",
       Country: "NG",
     },
   },
   {
+    ID: 2203454,
     Amount: 5000,
     Currency: "NGN",
     CurrencyCountry: "NG",
@@ -181,12 +209,83 @@ exports.bodyData = [
       BearsFee: true,
     },
     PaymentEntity: {
+      ID: 2203454,
       Issuer: "GTBANK",
       Brand: "MASTERCARD",
+      SixID: "080234",
+      Type: "CREDIT-CARD",
+      Country: "NG",
+    },
+  },
+  {
+    ID: 2203454,
+    Amount: 5000,
+    Currency: "NGN",
+    CurrencyCountry: "NG",
+    Customer: {
+      BearsFee: true,
+    },
+    PaymentEntity: {
+      ID: 2203454,
+      Issuer: "GTBANK",
+      Brand: "MASTERCARD",
+      Number: "080234******2903",
+      Type: "CREDIT-CARD",
+      Country: "NG",
+    },
+  },
+  {
+    ID: 2203454,
+    Amount: 5000,
+    Currency: "NGN",
+    CurrencyCountry: "NG",
+    Customer: {
+      BearsFee: true,
+    },
+    PaymentEntity: {
+      ID: 2203454,
+      Issuer: "GTBANK",
+      Brand: "MASTERCARD",
+      Number: "080234******2903",
+      SixID: "080234",
+      Country: "NG",
+    },
+  },
+  {
+    ID: 2203454,
+    Amount: 5000,
+    Currency: "NGN",
+    CurrencyCountry: "NG",
+    Customer: {
+      BearsFee: true,
+    },
+    PaymentEntity: {
+      ID: 2203454,
+      Issuer: "GTBANK",
+      Brand: "MASTERCARD",
+      Number: "080234******2903",
+      SixID: "080234",
       Type: "CREDIT-CARD",
     },
   },
-  {},
+  // {},
+];
+
+exports.compBodyStrings = [
+  "Amount",
+  "Currency",
+  "CurrencyCountry",
+  "Customer",
+  "BearsFee",
+  "PaymentEntity",
+  "ID",
+  "Issuer",
+  "Brand",
+  "Number",
+  "SixID",
+  "Type",
+  "Country",
+  // "dd",
 ];
 
 exports.computeTestData = {
@@ -287,3 +386,24 @@ exports.computeTestResponses = [
     Error: "No fee configuration for USD transactions.",
   },
 ];
+
+exports.feeSpecProps = [
+  "fee_id",
+  "fee_currency",
+  "fee_locale",
+  "fee_entity",
+  "entity_property",
+  "fee_type",
+  "fee_value",
+];
+"LNPY1221 NGN * ESUSU(*) : APPLY PERC 1.4",
+  (exports.feeSpecData = [
+    "  NGN * CREDIT-CARD(*) : APPLY PERC 1.4",
+    "LNPY1221   * CREDIT-CARD(*) : APPLY PERC 1.4",
+    "LNPY1221 NGN   CREDIT-CARD(*) : APPLY PERC 1.4",
+    "LNPY1221 NGN *   (*) : APPLY PERC 1.4",
+    "LNPY1221 NGN * CREDIT-CARD( ) : APPLY PERC 1.4",
+    "LNPY1221 NGN * CREDIT-CARD(*) : APPLY   1.4",
+    "LNPY1221 NGN * CREDIT-CARD(*) : APPLY PERC  ",
+    ,
+  ]);

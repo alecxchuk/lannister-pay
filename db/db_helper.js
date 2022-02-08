@@ -83,7 +83,6 @@ const readDB = () => {
         throw err; //  raise the error
       }
     }
-    // console.log(data, "aa");
     try {
       data = JSON.parse(data);
       //  hash is a constant so we can't directly assign the data
@@ -93,8 +92,7 @@ const readDB = () => {
       }
       readTryCount = 0;
     } catch (e) {
-      console.log("evf");
-      //   throw e; //  bad data?
+      throw e; //  bad data?
     }
   });
 };

@@ -1,5 +1,4 @@
 // routes for version one of the program
-
 const { Router } = require("express");
 const controller = require("../controllers/v1_controller");
 
@@ -15,9 +14,5 @@ module.exports = function (database) {
     controller.computeTransactionFee(database)
   );
 
-  // get db
-  router.get("/all", controller.getDb(database));
-
   return router;
-  // module.exports = router;
 };

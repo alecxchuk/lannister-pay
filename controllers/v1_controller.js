@@ -1,6 +1,6 @@
 // const db = require("../db/db_helper");
 const { allIn, noEntry } = require("../utils/check_array");
-const { isString, isObject } = require("../utils/check_string");
+const { isString, isObject, isNumber } = require("../utils/check_string");
 const { sendError } = require("../utils/responseHandler");
 const {
   invalidFeeConfig,
@@ -20,13 +20,32 @@ const {
   validFeeLocales,
   validFeeEntities,
   feeEntityProps,
+  TYPE,
+  ISSUER,
+  BRAND,
+  NUMBER,
+  COUNTRY,
+  PAYMENT_ENTITY,
+  CUSTOMER,
+  CURRENCY,
+  CURRENCY_COUNTRY,
+  AMOUNT,
+  LOCL,
+  INTL,
+  PERC,
+  FLAT,
+  FLAT_PERC,
+  BEARS_FEE,
+  ENTITY_PROPERTY,
+  FEE_ENTITY,
+  FEE_LOCALE,
 } = require("../utils/string_helpers");
 
 // Controller for fees endpoint
 exports.fees = function (db) {
   return (req, res) => {
     try {
-      // destruction req.body
+      // deconstruct req.body
       const { FeeConfigurationSpec } = req.body;
 
       // Throw errow if feeConfiguration doesnt exist in the request body
@@ -66,16 +85,18 @@ exports.fees = function (db) {
         const fee_type = payload[6].trim();
         const fee_value = payload[7].trim();
 
+        const feesSpecData = [
+          fee_id,
+          fee_currency,
+          fee_locale,
+          fee_entity,
+          entity_property,
+          fee_type,
+          fee_value,
+        ];
+
         // Throw an error if any property of the fee configuration is missing
-        if (
-          !fee_id ||
-          !fee_currency ||
-          !fee_locale ||
-          !fee_entity ||
-          !entity_property ||
-          !fee_type ||
-          !fee_value
-        ) {
+        if (feesSpecData.some((val) => !val)) {
           throw new Error(invalidFeeConfig);
         }
 
@@ -89,17 +110,11 @@ exports.fees = function (db) {
         }
 
         // Checks if fee type is valid - FLAT, PERC OR FLAT_PERC
-        if (
-          !(
-            fee_type === "PERC" ||
-            fee_type === "FLAT_PERC" ||
-            fee_type === "FLAT"
-          )
-        ) {
+        if (![PERC, FLAT_PERC, FLAT].includes(fee_type)) {
           throw new Error(invalidValueMessage(fee_type, "fee type"));
         }
 
-        if (fee_type === "FLAT_PERC") {
+        if (fee_type === FLAT_PERC) {
           let str = fee_value.split(":");
           if (
             (str.length !== 2 && str[0]) ||
@@ -109,24 +124,18 @@ exports.fees = function (db) {
             throw new Error(
               invalidValueMessage(fee_value, `${fee_type} fee value`)
             );
-            // throw new Error(
-            //   `${fee_type} cannot have ${fee_value} as fee value`
-            // );
           }
           for (let num of str) {
             if (isNaN(num)) {
               throw new Error(
                 invalidValueMessage(fee_value, "FLAT_PERC fee value")
               );
-              // throw new Error(
-              //   `${fee_type} cannot have ${fee_value} as fee value`
-              // );
             }
           }
         }
 
         // Throw an error if PERC or FLAT have a fee value that is not numeric
-        if (fee_type === "PERC" || fee_type === "FLAT") {
+        if (fee_type === PERC || fee_type === FLAT) {
           if (isNaN(fee_value)) {
             throw new Error(
               invalidValueMessage(fee_value, `${fee_type} fee value`)
@@ -194,56 +203,48 @@ exports.computeTransactionFee = function (db) {
           throw new Error(notDefined(prop));
         }
         // Throw error if amount property is not a number
-        if (prop === "Amount" && isNaN(req.body[prop])) {
+        if (prop === AMOUNT && !isNumber(req.body[prop])) {
           throw new Error(invalidType(prop, "number"));
         }
         // Throw error if currency or currencyCountry is not a string
         if (
-          ["Currency", "CurrencyCountry"].includes(prop) &&
+          [CURRENCY, CURRENCY_COUNTRY].includes(prop) &&
           !isString(req.body[prop])
         ) {
           throw new Error(invalidType(prop, "string"));
         }
         // Throw error if the customer or payment entity is not an object
         if (
-          ["Customer", "PaymentEntity"].includes(prop) &&
+          [CUSTOMER, PAYMENT_ENTITY].includes(prop) &&
           !isObject(req.body[prop])
         ) {
           throw new Error(invalidType(prop, "object"));
         }
 
         // checking if the payment entity object contains all the required props
-        if (prop === "PaymentEntity") {
+        if (prop === PAYMENT_ENTITY) {
           for (let payProp of paymentProps) {
             // Throw error if any required PaymentEntity prop is not defined
             if (!req.body.PaymentEntity.hasOwnProperty(payProp)) {
               throw new Error(notDefined(payProp));
             }
-            // Throw error if ID and sixID properties are not numbers
-            if (
-              ["ID", "sixID"].includes(payProp) &&
-              isNaN(PaymentEntity[payProp])
-            ) {
-              throw new Error(invalidType(`${prop} ${payProp}`, "number"));
-            } else if (
-              ["Issuer", "Brand", "Number", "Type", "Country"].includes(payProp)
-            ) {
+            if ([ISSUER, BRAND, NUMBER, TYPE, COUNTRY].includes(payProp)) {
               // Throw error if other properties are not strings
               if (typeof PaymentEntity[payProp] !== "string") {
                 throw new Error(invalidType(`${prop} ${payProp}`, "string"));
               }
               if (
-                payProp === "Type" &&
-                !feeEntityProps.includes(PaymentEntity["Type"])
+                payProp === TYPE &&
+                !feeEntityProps.includes(PaymentEntity[TYPE])
               ) {
                 throw new Error(
-                  invalidValueMessage(PaymentEntity["Type"], "fee entity")
+                  invalidValueMessage(PaymentEntity[TYPE], "fee entity")
                 );
               }
             }
           }
         }
-        if (prop === "Customer") {
+        if (prop === CUSTOMER) {
           // checking if the customer object contains all the required props
           for (let customerProp of customerProps) {
             // Throw error if any required customer prop is not defined
@@ -271,10 +272,10 @@ exports.computeTransactionFee = function (db) {
       // if the CurrencyCountry and payment country are the same
       // it is a local(LOCL) transaction and if not it is an
       // international(INTL) transaction
-      if (CurrencyCountry === PaymentEntity["Country"]) {
-        feeLocale = "LOCL";
+      if (CurrencyCountry === PaymentEntity[COUNTRY]) {
+        feeLocale = LOCL;
       } else {
-        feeLocale = "INTL";
+        feeLocale = INTL;
       }
 
       // Object holds fee_spec_property - payment_spec_property relation
@@ -283,7 +284,7 @@ exports.computeTransactionFee = function (db) {
           fee_currency: Currency,
         },
         { fee_locale: feeLocale },
-        { fee_entity: PaymentEntity["Type"] },
+        { fee_entity: PaymentEntity[TYPE] },
         { entity_property: PaymentEntity },
       ];
 
@@ -305,7 +306,7 @@ exports.computeTransactionFee = function (db) {
         .filter((fee) => fee.fee_locale === feeLocale || fee.fee_locale === "*")
         .filter(
           (fee) =>
-            fee.fee_entity === PaymentEntity["Type"] || fee.fee_entity === "*"
+            fee.fee_entity === PaymentEntity[TYPE] || fee.fee_entity === "*"
         ) // filter off fee entities that are same as the Type or '*'
 
         // Return the fee configuration that the entity property matches the value contained in the payment entity
@@ -322,19 +323,19 @@ exports.computeTransactionFee = function (db) {
       fees = fees.filter((fee) => {
         // checks if every value of fee_local is not '*'
         // if so, removes all fees where fee_locale is '*'
-        if (!allIn(fees, "fee_locale")) {
+        if (!allIn(fees, FEE_LOCALE)) {
           return fee.fee_locale !== "*";
         }
 
         // checks if every value fee_entity is not '*'
         // if so, removes all fees where fee_entity is '*'
-        if (!allIn(fees, "fee_entity")) {
+        if (!allIn(fees, FEE_ENTITY)) {
           return fee.feeEntity !== "*";
         }
 
         // checks if every value entity_property is not '*'
         // if so, removes all fees where entity_property is '*'
-        if (!allIn(fees, "entity_property")) {
+        if (!allIn(fees, ENTITY_PROPERTY)) {
           return fee.entity_property !== "*";
         }
         return fee;
@@ -370,21 +371,21 @@ exports.computeTransactionFee = function (db) {
         throw new Error(noValueFoundInFeeConfigError("fee id"));
       }
 
-      if (["PERC", "FLAT"].includes(feeType) && isNaN(feeValue)) {
+      if ([PERC, FLAT].includes(feeType) && isNaN(feeValue)) {
         throw new Error(invalidType(feeType, "number"));
       }
 
       // checks the fee type
       // applies the correct multiplier depending on the fee type
-      if (feeType === "FLAT") {
+      if (feeType === FLAT) {
         // Caluclate applied fee
         AppliedFeeValue += parseFloat(feeValue);
-      } else if (feeType === "PERC") {
+      } else if (feeType === PERC) {
         // store in perc value variable
         let value = parseFloat(feeValue);
         // Caluclate applied fee
         AppliedFeeValue += (value / 100) * Amount;
-      } else if (feeType === "FLAT_PERC") {
+      } else if (feeType === FLAT_PERC) {
         // Split fee to get the flat fee and perc
         const divStr = feeValue.split(":");
         // Throw error if fee_values are not numeric
@@ -408,7 +409,7 @@ exports.computeTransactionFee = function (db) {
       // check the bearsfee attriibute
       // if true the customer pays the charges and the applied fee is added to the transaction amount
       // if false ChargeAmount is the transaction amount
-      if (Customer["BearsFee"]) {
+      if (Customer[BEARS_FEE]) {
         ChargeAmount = AppliedFeeValue + Amount;
       } else {
         ChargeAmount = Amount;

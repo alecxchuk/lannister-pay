@@ -179,11 +179,6 @@ exports.computeTransactionFee = function (db) {
       // deconstruct the req body;
       const { Amount, Currency, CurrencyCountry, PaymentEntity, Customer } =
         req.body;
-      // deconstructing the payment entity object to get
-      // const { ID, Issuer, Brand, Number, SixID, Type, Country } = PaymentEntity;
-
-      // Deconstruct the customer object to get;
-      // const { BearsFee } = Customer;
 
       if (
         req.body &&
@@ -200,9 +195,7 @@ exports.computeTransactionFee = function (db) {
         }
         // Throw error if amount property is not a number
         if (prop === "Amount" && isNaN(req.body[prop])) {
-          // if (isNaN(req.body[prop])) {
           throw new Error(invalidType(prop, "number"));
-          // }
         }
         // Throw error if currency or currencyCountry is not a string
         if (
@@ -216,9 +209,7 @@ exports.computeTransactionFee = function (db) {
           ["Customer", "PaymentEntity"].includes(prop) &&
           !isObject(req.body[prop])
         ) {
-          // if (!isObject(req.body[prop])) {
           throw new Error(invalidType(prop, "object"));
-          // }
         }
 
         // checking if the payment entity object contains all the required props
@@ -229,10 +220,11 @@ exports.computeTransactionFee = function (db) {
               throw new Error(notDefined(payProp));
             }
             // Throw error if ID and sixID properties are not numbers
-            if (payProp === "ID" || payProp === "sixID") {
-              if (isNaN(PaymentEntity[payProp])) {
-                throw new Error(invalidType(`${prop} ${payProp}`, "number"));
-              }
+            if (
+              ["ID", "sixID"].includes(payProp) &&
+              isNaN(PaymentEntity[payProp])
+            ) {
+              throw new Error(invalidType(`${prop} ${payProp}`, "number"));
             } else if (
               ["Issuer", "Brand", "Number", "Type", "Country"].includes(payProp)
             ) {
@@ -409,10 +401,6 @@ exports.computeTransactionFee = function (db) {
       } else {
         // throw error for any other fee type
         throw new Error(invalidValueMessage(feeType, "fee type"));
-        // sendError(res, {
-        //   code: 400,
-        //   message: `Unexpected error: Does not understand fee type ${feeType}`,
-        // });
       }
 
       // Round the applied fee value to a whole number
@@ -437,19 +425,6 @@ exports.computeTransactionFee = function (db) {
       return res.status(200).json(payload);
     } catch (err) {
       sendError(res, err);
-    }
-  };
-};
-
-// Controller to get all data from db
-exports.getDb = function (db) {
-  return (req, res) => {
-    try {
-      const results = db.getAll();
-      return res.status(200).json(results);
-      // return sendSuccess(res, results);
-    } catch (err) {
-      sendError(res, { message: "failure" });
     }
   };
 };

@@ -3,7 +3,6 @@ require("dotenv").config();
 // express
 const express = require("express");
 // database helper
-// const db = require("./db/db_helper");
 const morgan = require("morgan");
 
 module.exports = function (database) {
@@ -20,10 +19,7 @@ module.exports = function (database) {
 
   const version = version1(database);
 
-  //   app.use("/", version1);
   app.use("/", version);
 
   return app;
 };
-
-// module.exports = app;
